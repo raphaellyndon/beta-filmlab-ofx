@@ -1,0 +1,49 @@
+name: Build OFX
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  build-macos:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: false
+      - name: Fetch OFX headers
+        run: |
+          curl -sL https://github.com/ofxa/openfx/archive/refs/heads/main.tar.gz -o openfx.tar.gz
+          mkdir -p deps && tar xzf openfx.tar.gz -C deps
+      - name: Configure
+        run: cmake -B build -DCMAKE_BUILD_TYPE=Release
+      - name: Build (arm64 + x86_64 universal)
+        run: |
+          cmake --build build --config Release
+          # lipo into universal if needed (CMake handles APPLE arch via CMAKE_OSX_ARCHITECTURES)
+        env:
+          CMAKE_OSX_ARCHITECTURES: arm64;x86_64
+      - name: Upload bundle
+        uses: actions/upload-artifact@v4
+        with:
+          name: BETA_FilmLab.ofx-macOS
+          path: build/BETA_FilmLab.ofx
+
+  build-linux:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Fetch OFX headers
+        run: |
+          curl -sL https://github.com/ofxa/openfx/archive/refs/heads/main.tar.gz -o openfx.tar.gz
+          mkdir -p deps && tar xzf openfx.tar.gz -C deps
+      - name: Build
+        run: |
+          cmake -B build -DCMAKE_BUILD_TYPE=Release
+          cmake --build build --config Release
+      - name: Upload bundle
+        uses: actions/upload-artifact@v4
+        with:
+          name: BETA_FilmLab.ofx-Linux
+          path: build/BETA_FilmLab.ofx
