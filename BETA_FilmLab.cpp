@@ -36,8 +36,7 @@ struct Params {
 };
 
 static OfxStatus getParams(OfxImageEffectHandle h, Params& p) {
-    // OFX: an image effect handle is also a param set handle (explicit cast)
-    OfxParamSetHandle psh = (OfxParamSetHandle)h;
+    OfxParamSetHandle psh; CHECK(gEffectSuite->getParamSet(h,&psh));
     OfxParamHandle ph; int iv; double dv;
     #define GETI(name,dst) CHECK(gParamSuite->paramGetHandle(psh,name,&ph,0)); \
         CHECK(gParamSuite->paramGetValue(ph,&iv)); dst=iv;
@@ -58,8 +57,8 @@ static OfxStatus getParams(OfxImageEffectHandle h, Params& p) {
 }
 
 static OfxStatus defineParams(OfxImageEffectHandle h) {
-    OfxParamSetHandle psh = (OfxParamSetHandle)h;
-    OfxParamHandle ph; OfxPropertySetHandle ps;
+    OfxParamSetHandle psh; CHECK(gEffectSuite->getParamSet(h,&psh));
+    OfxPropertySetHandle ps;
     #define CHOICE(name,label,def,opts,no) \
         CHECK(gParamSuite->paramDefine(psh,kOfxParamTypeChoice,name,&ps)); \
         CHECK(gPropSuite->propSetString(ps,kOfxPropLabel,0,label)); \
@@ -313,7 +312,7 @@ static OfxStatus mainEntry(const char* action,const void* handle,
         return kOfxStatOK;
     }
     if(strcmp(action,kOfxImageEffectActionRender)==0){
-        double time; OfxRectI win; OfxPropertySetHandle ps;
+        double time; OfxRectI win;
         CHECK(gPropSuite->propGetDouble(inArgs,kOfxPropTime,0,&time));
         CHECK(gPropSuite->propGetIntN(inArgs,kOfxImageEffectPropRenderWindow,4,&win.x1));
         return doRender((OfxImageEffectHandle)handle,time,win);
